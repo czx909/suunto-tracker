@@ -1,3 +1,11 @@
+import sys
+import random
+
+# 25% chance to run every 5 minutes (averages out to running roughly every 20 mins randomly)
+if random.random() > 0.25:
+    print("Randomly skipping this run to randomize check intervals.")
+    sys.exit(0)
+
 import requests
 from bs4 import BeautifulSoup
 
