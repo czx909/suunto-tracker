@@ -14,17 +14,22 @@ def check_stock():
         response = requests.get(URL, headers=HEADERS, timeout=15)
         response.raise_for_status()
         
-        # FORCED TEST: Triggers the notification immediately
-        requests.post(
-            f"https://ntfy.sh/{NTFY_TOPIC}",
-            data="SUCCESS: ntfy connection test working!".encode("utf-8"),
-            headers={
-                "Title": "NTFY TEST ALERT",
-                "Priority": "high",
-                "Tags": "tada"
-            }
-        )
-        print("Test push notification sent successfully.")
+        page_text = response.text
+
+        # Triggers ONLY when "Out of stock" is removed from the product page
+        if "Out of stock" not in page_text:
+            requests.post(
+                f"https://ntfy.sh/{NTFY_TOPIC}",
+                data="Suunto Core 2 All Black is back IN STOCK!".encode("utf-8"),
+                headers={
+                    "Title": "STOCK ALERT: Suunto Core 2",
+                    "Priority": "high",
+                    "Tags": "watch,tada"
+                }
+            )
+            print("Stock detected! Notification sent via ntfy.")
+        else:
+            print("Item is still out of stock.")
 
     except Exception as e:
         print(f"Error checking stock: {e}")
