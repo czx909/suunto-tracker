@@ -42,10 +42,9 @@ try:
     page_text = soup.get_text().lower()
 
     # Checks for active purchase options while ensuring it isn't listed as out of stock
-    if "add to cart" in page_text or ("buy now" in page_text and "out of stock" not in page_text):
-        send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
-        print("Stock detected! Alert sent.")
-    else:
-        print("Still out of stock. Staying silent.")
+   # TEMPORARY TEST: Change 'if' to 'if True:' so it always triggers an alert
+if True:
+    send_push("TEST ALERT: Suunto Core 2", "This is a test notification!", priority="5")
+    print("Stock detected! Alert sent.")
 except Exception as e:
     print(f"Error checking page: {e}")
