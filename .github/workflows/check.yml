@@ -2,8 +2,11 @@ name: Suunto Stock Monitor
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Runs automatically every 30 minutes
-  workflow_dispatch:        # Allows manual testing from your phone
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   check-stock:
