@@ -1,12 +1,9 @@
+import sys
 import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 URL = "https://www.suunto.com/en-ca/Products/sports-watches/suunto-core-2/suunto-core-2-all-black/"
 NTFY_TOPIC = "suunto_core_2"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
 
 def send_push(title, message, priority="5"):
     try:
@@ -16,7 +13,6 @@ def send_push(title, message, priority="5"):
             "Click": URL,
             "Tags": "watch,shopping_cart"
         }
-        
         response = requests.post(
             f"https://ntfy.sh/{NTFY_TOPIC}",
             data=message.encode('utf-8'),
@@ -27,37 +23,46 @@ def send_push(title, message, priority="5"):
     except Exception as e:
         print(f"Push error: {e}")
 
-try:
-    response = requests.get(URL, headers=HEADERS, timeout=15)
-    soup = BeautifulSoup(response.text, "html.parser")
-    
-    # Target button elements specifically instead of searching global text
-    buttons = soup.find_all(["button", "a"])
-    
-    # Filter for buttons directly associated with purchasing this item
-    buy_buttons = [
-        btn for btn in buttons 
-        if "add to cart" in btn.get_text().lower() or "buy now" in btn.get_text().lower()
-    ]
-    
-    # Check if a buy button exists AND is not disabled/hidden
-    in_stock = False
-    for btn in buy_buttons:
-        is_disabled = btn.has_attr("disabled") or "disabled" in btn.get("class", [])
-        if not is_disabled:
-            in_stock = True
-            break
+def check_stock():
+    with sync_playwright() as p:
+        # Launch headless browser with standard desktop user agent
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = context.new_page()
+        
+        try:
+            print("Loading page in headless browser...")
+            page.goto(URL, wait_until="networkidle", timeout=30000)
+            
+            # Wait 3 seconds for client-side JS/React/Vue to fully render button states
+            page.wait_for_timeout(3000)
+            
+            page_text = page.content().lower()
+            
+            # Look for active buy buttons rendered in the DOM
+            buy_button = page.query_selector("button:has-text('Add to cart'), button:has-text('Buy now')")
+            
+            # Strict out of stock text check across rendered page
+            is_out_of_stock = "out of stock" in page_text or "sold out" in page_text or "notify me" in page_text
+            
+            in_stock = False
+            if buy_button and not is_out_of_stock:
+                # Check if the rendered button is actually clickable and not disabled
+                if buy_button.is_enabled() and buy_button.is_visible():
+                    in_stock = True
 
-    # Alternative check: explicit "out of stock" notice in the buy area
-    page_text = soup.get_text().lower()
-    if "notify me when available" in page_text or "out of stock" in page_text:
-        in_stock = False
+            if in_stock:
+                send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
+                print("Stock detected! Alert sent.")
+            else:
+                print("Still out of stock. Staying silent.")
 
-    if in_stock:
-        send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
-        print("Stock detected! Alert sent.")
-    else:
-        print("Still out of stock. Staying silent.")
+        except Exception as e:
+            print(f"Error checking page: {e}")
+            
+        browser.close()
 
-except Exception as e:
-    print(f"Error checking page: {e}")
+if __name__ == "__main__":
+    check_stock()
