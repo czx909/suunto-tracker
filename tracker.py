@@ -1,15 +1,6 @@
-import sys
-import random
-
-# 25% chance to run every 5 minutes (averages out to running roughly every 20 mins randomly)
-if random.random() > 0.25:
-    print("Randomly skipping this run to randomize check intervals.")
-    sys.exit(0)
-
 import requests
 from bs4 import BeautifulSoup
 
-# Target product URL and your ntfy channel
 URL = "https://www.suunto.com/en-ca/Products/sports-watches/suunto-core-2/suunto-core-2-all-black/"
 NTFY_TOPIC = "suunto_core_2"
 
@@ -19,20 +10,21 @@ HEADERS = {
 
 def send_push(title, message, priority="5"):
     try:
-        # Pass headers with strict ASCII characters to avoid latin-1 encoding errors
+        # ntfy allows tags/emojis passed via the X-Tags header
         headers = {
-            "Title": title.encode("utf-8").decode("latin-1"),
+            "Title": title,
             "Priority": priority,
             "Click": URL,
             "Tags": "watch,shopping_cart"
         }
         
-        requests.post(
+        response = requests.post(
             f"https://ntfy.sh/{NTFY_TOPIC}",
             data=message.encode('utf-8'),
             headers=headers,
             timeout=10
         )
+        print(f"Push sent! Response status: {response.status_code}")
     except Exception as e:
         print(f"Push error: {e}")
 
@@ -42,9 +34,10 @@ try:
     page_text = soup.get_text().lower()
 
     # Checks for active purchase options while ensuring it isn't listed as out of stock
-   # TEMPORARY TEST: Change 'if' to 'if True:' so it always triggers an alert
-if True:
-    send_push("TEST ALERT: Suunto Core 2", "This is a test notification!", priority="5")
-    print("Stock detected! Alert sent.")
+    if "add to cart" in page_text or ("buy now" in page_text and "out of stock" not in page_text):
+        send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
+        print("Stock detected! Alert sent.")
+    else:
+        print("Still out of stock. Staying silent.")
 except Exception as e:
     print(f"Error checking page: {e}")
