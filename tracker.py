@@ -52,8 +52,7 @@ def check_stock():
                 # Check if the rendered button is actually clickable and not disabled
                 if buy_button.is_enabled() and buy_button.is_visible():
                     in_stock = True
-
-            if in_stock:
+                if True:
                 send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
                 print("Stock detected! Alert sent.")
             else:
