@@ -36,7 +36,7 @@ def check_stock():
             print("Loading page in headless browser...")
             page.goto(URL, wait_until="networkidle", timeout=30000)
             
-            # Wait 3 seconds for client-side JS/React/Vue to fully render button states
+            # Wait 3 seconds for client-side JS to fully render button states
             page.wait_for_timeout(3000)
             
             page_text = page.content().lower()
@@ -52,7 +52,8 @@ def check_stock():
                 # Check if the rendered button is actually clickable and not disabled
                 if buy_button.is_enabled() and buy_button.is_visible():
                     in_stock = True
-                if True:
+
+            if in_stock:
                 send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
                 print("Stock detected! Alert sent.")
             else:
