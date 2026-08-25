@@ -1,26 +1,24 @@
 import os
 import requests
-from playwright.sync_api import sync_playwright
 
 NTFY_TOPIC = os.getenv("NTFY_TOPIC")
 URL = "https://www.suunto.com/en-ca/Products/sports-watches/suunto-core-2/suunto-core-2-all-black/"
 
-def check_stock():
-    with sync_playwright() as p:
-        # Launch a real, headless Chromium browser instance
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        
-        # Navigate to the product page and wait for network activity to settle
-        page.goto(URL, wait_until="networkidle")
-        
-        # Extract full page body text after JavaScript has fully rendered
-        content = page.content()
-        browser.close()
+# Headers to make the script look like a standard web browser
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
-        # Check if 'Out of stock' is absent or 'In stock' / 'Add to cart' appears
-        if "Out of stock" not in content:
-            # Send alert via ntfy
+def check_stock():
+    try:
+        response = requests.get(URL, headers=HEADERS, timeout=15)
+        response.raise_for_status()
+        
+        page_text = response.text
+
+        # The Suunto page currently displays "Out of stock" next to the price
+        if "Out of stock" not in page_text:
             requests.post(
                 f"https://ntfy.sh/{NTFY_TOPIC}",
                 data="Suunto Core 2 All Black is back IN STOCK!".encode("utf-8"),
@@ -30,6 +28,12 @@ def check_stock():
                     "Tags": "watch,tada"
                 }
             )
+            print("Stock detected! Notification sent via ntfy.")
+        else:
+            print("Item is still out of stock.")
+
+    except Exception as e:
+        print(f"Error checking stock: {e}")
 
 if __name__ == "__main__":
     check_stock()
