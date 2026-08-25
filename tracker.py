@@ -10,6 +10,7 @@ HEADERS = {
 }
 
 def send_push(title, message, priority="default"):
+    send_push("Test Notification", "ntfy connection working!")
     try:
         requests.post(
             f"https://ntfy.sh/{NTFY_TOPIC}",
