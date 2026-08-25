@@ -19,15 +19,18 @@ HEADERS = {
 
 def send_push(title, message, priority="5"):
     try:
+        # Pass headers with strict ASCII characters to avoid latin-1 encoding errors
+        headers = {
+            "Title": title.encode("utf-8").decode("latin-1"),
+            "Priority": priority,
+            "Click": URL,
+            "Tags": "watch,shopping_cart"
+        }
+        
         requests.post(
             f"https://ntfy.sh/{NTFY_TOPIC}",
             data=message.encode('utf-8'),
-            headers={
-                "Title": title,
-                "Priority": priority,
-                "Click": URL,
-                "Tags": "watch,shopping_cart"
-            },
+            headers=headers,
             timeout=10
         )
     except Exception as e:
@@ -40,7 +43,7 @@ try:
 
     # Checks for active purchase options while ensuring it isn't listed as out of stock
     if "add to cart" in page_text or ("buy now" in page_text and "out of stock" not in page_text):
-        send_push("🚨 Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
+        send_push("Suunto Core 2 IN STOCK!", "The Suunto Core 2 All Black is available now! Tap to purchase.", priority="5")
         print("Stock detected! Alert sent.")
     else:
         print("Still out of stock. Staying silent.")
