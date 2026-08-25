@@ -1,0 +1,17 @@
+name: Suunto Stock Monitor
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Runs automatically every 30 minutes
+  workflow_dispatch:        # Allows manual testing from your phone
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install requests beautifulsoup4
+      - run: python tracker.py
